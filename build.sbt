@@ -1,5 +1,5 @@
 ThisBuild / organization := "org.cscie88c"
-ThisBuild / scalaVersion := "2.13.16"
+ThisBuild / scalaVersion := "2.12.18"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / versionScheme := Some("semver-spec")
 
@@ -29,13 +29,11 @@ lazy val commonDependencies = Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
 
-  // parallel collections
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
 )
 
 // common settings
 lazy val commonSettings = Seq(
-    scalaVersion := "2.13.16",
+    scalaVersion := "2.12.18",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,
     scalacOptions ++= Seq(
@@ -44,8 +42,6 @@ lazy val commonSettings = Seq(
       "-unchecked",
       "-language:postfixOps",
       "-language:higherKinds", // HKT required for Monads and other HKT types
-      "-Wunused", // for scalafix
-      "-Wunused:imports", // for scalafix
       "-Yrangepos"
     ),
     Compile / run / fork := true, // cleaner to run programs in a JVM different from sbt

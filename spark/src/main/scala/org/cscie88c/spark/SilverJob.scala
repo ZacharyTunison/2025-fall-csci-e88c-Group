@@ -6,30 +6,25 @@ import org.apache.spark.sql.functions._
 
 object SilverJob {
 
-  val TripsParquetPath  = "/opt/spark-data/yellow_tripdata_2025-01.parquet"
-  val TaxiZonesCsvPath  = "/opt/spark-data/taxi_zone_lookup.csv"
-
-  val SilverRoot        = "/opt/spark-data/silver"
   val dqThreshold       = 0.20   // 20% reject threshold per DQ rule
 
 
 
   def main(args: Array[String]): Unit = {
-
+    Utilities.validateArgs("Usage: SilverJob outputDirectory taxiZoneCSVpath TripDataparquetpath OutputPath", Array(args(1),args(2)))
     val spark = SparkSession.builder()
       .appName("SilverTripCleaning-MultiRule-SingleParquet")
       .master("local[*]")
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
-    import spark.implicits._
     val outputFiles:Boolean = false
-    cleanData(TripsParquetPath, TaxiZonesCsvPath, outputFiles)(spark)
+    cleanData(args(2), args(1), args(0), outputFiles, args(3))(spark)
     spark.stop()
 
   }
 
-  def cleanData(tripsParquetPath: String, taxiZonesCsvPath: String,  outputExtraFiles: Boolean)(spark: SparkSession) : Unit = {
+  def cleanData(tripsParquetPath: String, taxiZonesCsvPath: String,  SilverRoot: String, outputExtraFiles: Boolean, conformedDataPath: String)(spark: SparkSession) : Unit = {
     // ============================================================
     // Step 1: Load input
     // ============================================================
@@ -42,7 +37,7 @@ object SilverJob {
     val withDerived = tripsDF
       .withColumn(
         "trip_duration_min",
-        (col("tpep_dropoff_datetime").cast("long") - col("tpep_pickup_datetime").cast("long")) / 60.0
+        (unix_timestamp(col("tpep_dropoff_datetime")) - unix_timestamp(col("tpep_pickup_datetime"))) / 60.0
       )
       .withColumn("pickup_date", to_date(col("tpep_pickup_datetime")))
       .withColumn("pickup_hour", hour(col("tpep_pickup_datetime")))
@@ -53,7 +48,7 @@ object SilverJob {
     // Step 3: Data Quality Pipeline
     // ============================================================
     println("\n=== STARTING DQ CLEANING PIPELINE ===")
-    val withBasicDQ = applyBasicDQRules(withDerived, outputExtraFiles)
+    val withBasicDQ = applyBasicDQRules(withDerived, outputExtraFiles, SilverRoot)
 
     // ============================================================
     // Step 4: Remove negative numeric values
@@ -65,7 +60,7 @@ object SilverJob {
     var numericallyCleanDF = withBasicDQ
     if (numericCols.nonEmpty) {
       val negativeCondition = numericCols.map(c => col(c) >= 0).reduce(_ && _)
-      numericallyCleanDF = applyDQRule(numericallyCleanDF, "no_negative_values", negativeCondition, outputExtraFiles)
+      numericallyCleanDF = applyDQRule(numericallyCleanDF, "no_negative_values", negativeCondition, outputExtraFiles, SilverRoot)
       finalCleanCount = numericallyCleanDF.count()
     } else {
       println("No numeric columns found — skipping no_negative_values check.")
@@ -153,15 +148,15 @@ object SilverJob {
     println("\n=== APPLYING POST JOIN DQ RULE: drop_invalid_zone_ids ===")
     //pickup borough must be non null and not an empty string
     val condition: Column = not(col("pickup_borough").isNull || trim(col("pickup_borough")) === "")
-    val finalConformedDF = applyDQRule(joinedTripsDF, "Invalid Zones", condition ,outputExtraFiles)
+    val finalConformedDF = applyDQRule(joinedTripsDF, "Invalid Zones", condition ,outputExtraFiles, SilverRoot)
 
 
 
       // ============================================================
       // Step 9: Write conformed Silver Parquet
       // ============================================================
-      Utilities.parquetOutput(finalConformedDF, Utilities.SilverTripsConformed)
-      println(s"✅ Conformed Silver data written to: $Utilities.SilverTripsConformed")
+      Utilities.parquetOutput(finalConformedDF, conformedDataPath)
+      println(s"✅ Conformed Silver data written to: $conformedDataPath")
 
 
 
@@ -197,19 +192,19 @@ object SilverJob {
 
 
   }
-  private def applyBasicDQRules(df: DataFrame, outputExtraFiles: Boolean): DataFrame = {
+  private def applyBasicDQRules(df: DataFrame, outputExtraFiles: Boolean, SilverRoot: String): DataFrame = {
     var currentDF = df
-    currentDF = applyDQRule(currentDF, "Non-null", currentDF.columns.map(c => col(c).isNotNull).reduce(_ && _), outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "passenger_count_valid", col("passenger_count").between(1, 8), outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "total_amount_nonnegative", col("total_amount") >= 0, outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "chronological_order_valid", col("tpep_dropoff_datetime") >= col("tpep_pickup_datetime"), outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "duration_reasonable", col("trip_duration_min").between(1.0, 180.0), outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "distance_reasonable", col("trip_distance").between(0.1, 100.0), outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "payment_type_valid", col("payment_type").between(1, 6), outputExtraFiles)
-    currentDF = applyDQRule(currentDF, "ratecode_valid", col("RatecodeID").between(1, 6), outputExtraFiles)
+    currentDF = applyDQRule(currentDF, "Non-null", currentDF.columns.map(c => col(c).isNotNull).reduce(_ && _), outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "passenger_count_valid", col("passenger_count").between(1, 8), outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "total_amount_nonnegative", col("total_amount") >= 0, outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "chronological_order_valid", col("tpep_dropoff_datetime") >= col("tpep_pickup_datetime"), outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "duration_reasonable", col("trip_duration_min").between(1.0, 180.0), outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "distance_reasonable", col("trip_distance").between(0.1, 100.0), outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "payment_type_valid", col("payment_type").between(1, 6), outputExtraFiles,SilverRoot)
+    currentDF = applyDQRule(currentDF, "ratecode_valid", col("RatecodeID").between(1, 6), outputExtraFiles,SilverRoot)
     currentDF
   }
-  def applyDQRule(df: DataFrame, ruleName: String, condition: org.apache.spark.sql.Column, outputFiles: Boolean): DataFrame = {
+  def applyDQRule(df: DataFrame, ruleName: String, condition: org.apache.spark.sql.Column, outputFiles: Boolean,SilverRoot: String): DataFrame = {
     println(s"\n=== APPLYING RULE: $ruleName ===")
 
     val rejects = df.filter(!condition)

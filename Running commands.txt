@@ -1,0 +1,39 @@
+Compilation: 
+sbt
+compile
+spark/assembly
+exit
+
+
+
+Running Locally on docker: 
+
+cp spark/target/scala-2.12/SparkJob.jar docker/apps/spark
+docker compose -f docker-compose-spark.yml up -d
+docker exec -it spark-master /bin/bash
+
+Run Bronze step
+/opt/spark/bin/spark-submit --class org.cscie88c.spark.BronzeJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar  /opt/spark-data/taxi_zone_lookup.csv /opt/spark-data/yellow_tripdata_2025-01.parquet
+
+Run Silver step (required prior to gold)
+/opt/spark/bin/spark-submit --class org.cscie88c.spark.SilverJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar /opt/spark-data/silver /opt/spark-data/taxi_zone_lookup.csv /opt/spark-data/yellow_tripdata_2025-01.parquet /opt/spark-data/silver/trips_conformed
+
+Run Gold step (run silver first)
+/opt/spark/bin/spark-submit --class org.cscie88c.spark.GoldJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar /opt/spark-data/silver/trips_conformed /opt/spark-data/gold
+
+
+docker compose -f docker-compose-spark.yml down
+
+Or run on AWS, with appropriately configured AWS cli and EMR serverless setup per https://github.com/v-tadipatri/spark-emr-example
+
+Using the runEMRBronze, runEMRSilver, and runEMRGold in this repo:
+
+aws s3 cp spark/target/scala-2.12/SparkJob.jar s3://taxidatabucket-ztharvard/apps/SparkJob.jar
+
+
+
+
+
+SilverJob /opt/spark-data/silver /opt/spark-data/taxi_zone_lookup.csv /opt/spark-data/yellow_tripdata_2025-01.parquet /opt/spark-data/silver/trips_conformed
+SparkJob /opt/spark-data/taxi_zone_lookup.csv /opt/spark-data/yellow_tripdata_2025-01.parquet
+GoldJob /opt/spark-data/silver/trips_conformed /opt/spark-data/gold

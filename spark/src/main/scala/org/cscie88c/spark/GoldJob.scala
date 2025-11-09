@@ -9,10 +9,15 @@ import java.time.format.DateTimeFormatter
 object GoldJob {
 
 
-  val GoldRoot = "/opt/spark-data/gold"
 
 
   def main(args: Array[String]): Unit = {
+    val usage: String = "GoldJob conformedDataPath outputDataRoot"
+    if (args.length < 2) {
+      println(usage)
+      sys.exit(1)
+    }
+
 
     val spark = SparkSession.builder()
       .appName("GoldJob-KPI-Compute")
@@ -22,15 +27,15 @@ object GoldJob {
     spark.sparkContext.setLogLevel("ERROR")
 
 
-    processKPIS(GoldRoot)(spark)
+    processKPIS(args(0), args(1))(spark)
 
     spark.stop()
   }
 
-  def processKPIS(goldRoot: String)(spark:SparkSession) = {
+  def processKPIS(conformedData: String, goldRoot: String)(spark:SparkSession) = {
     import spark.implicits._
     println("\n=== GOLD JOB: READING SILVER CONFORMED DATA ===")
-    val silverDF = spark.read.parquet(Utilities.SilverTripsConformed)
+    val silverDF = spark.read.parquet(conformedData)
     println(s"Loaded ${silverDF.count()} rows from Silver.")
 
     // ================================================================
@@ -87,7 +92,7 @@ object GoldJob {
     // ================================================================
     val nightTrips:Double = silverDF.filter(
       ($"pickup_hour" >= 22) || ($"pickup_hour" <= 4)
-    ).count()
+    ).count().toDouble
 
     val nightPct = (nightTrips / totalTrips) * 100
 

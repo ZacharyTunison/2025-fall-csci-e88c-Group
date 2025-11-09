@@ -82,5 +82,9 @@ class TransformUtilsTest extends AnyFunSuite {
     assert(!isReasonableDuration(0.5))
     assert(!isReasonableDuration(250.0))
   }
+  test("validate args works properly")
+  {
+    assert(Utilities.validateArgs("help", Array("data/taxi_zone_lookup.csv", "data/yellow_tripdata_2025-01.parquet", "data/silver/trips_conformed")))
+  }
 }
 
