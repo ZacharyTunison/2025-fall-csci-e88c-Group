@@ -1,169 +1,87 @@
-## Programming in Scala for Big Data Systems, Fall 2025
-Scala Project for Harvard Extension course CSCI E-88C, Fall, 2025. See course details at [Scala for Big Data](https://courses.dce.harvard.edu/?details&srcdb=202601&crn=16769).
+## Programming in Scala for Big Data Systems, Fall 2025 Group Project - Group 6
+Scala Project for Harvard Extension course CSCI E-88C, Fall, 2025. 
+
+This Repository holds the code for Group 6's implementation of the group project.
+
+The main branch contains the most proper versions of things
+
+The AWS branch contains the changes needed to make things run on AWS, which uses Scala 2.12. See "For AWS:" below 
+
+For compilation:
+```
+sbt
+compile
+spark/assembly
+exit
+```
+
+Required files:
+```
+data/taxi_zone_lookup.csv
+data/yellow_tripdata_2025-01.parquet
+```
+
+To copy the megajar file to the proper location (main branch)
+
+```
+cp spark/target/scala-2.13/SparkJob.jar docker/apps/spark
+```
+
+Ensure Docker Desktop is running, and start the spark containers:
+
+```
+docker compose -f docker-compose-spark.yml up -d
+```
+
+Enter the Docker shell:
+```
+docker exec -it spark-master /bin/bash
+```
+
+Run the jobs. Note that Silver must run before Gold.
+
+```
+/opt/spark/bin/spark-submit --class org.cscie88c.spark.BronzeJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar
+/opt/spark/bin/spark-submit --class org.cscie88c.spark.SilverJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar
+/opt/spark/bin/spark-submit --class org.cscie88c.spark.GoldJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar
+```
+
+For AWS:
+--------
+
+switch to the AWS branch (git checkout AWS), which compiles to scala 2.12 and requires some code changes to allow passing in file paths.
+Key changes: 
+Bronze, Silver and Gold jobs changed to allow passing in needed paths. 
+Removed reject output from silver for simplicity
+Scala 2.12 compatibility - downgraded some dependencies, eliminated others
+Changed docker container to match AWS as close as possible:  apache/spark:3.5.7-scala2.12-java11-ubuntu
 
 
-This project is a multi-module setup for Scala applications that integrate with big data frameworks like Spark, Beam, and Kafka. It is designed to facilitate development in a structured manner, allowing for modular code organization and easy dependency management.
+Configure ./scripts/user_conf.sh with your appId, EMR_Role_ID, and S3 Bucket name. 
+AWS cli required (or it can be done in EMR studio as well)
 
-The project requires Java 17, Scala 2.13 and sbt 1.9.2+ environment to run.
+Upload the mega jar to $BUCKET/apps/SparkJob.jar (replacing <bucket> with your bucket prefix, in my case "s3://taxidatabucket-ztharvard")
 
-## Project Structure
-- **core**: Contains the core library code shared across other modules.
-- **cli**: Implements the command-line interface for the application.
-- **spark**: Contains Spark-specific code and configurations.
-- **build.sbt**: The main build file for the project, defining the modules and their dependencies.
-- **README.md**: This file, providing an overview of the project and its structure.
+ ```aws s3 cp -sse AES256 spark/target/scala-2.12/SparkJob.jar <bucket>/apps/SparkJob.jar```
 
-## Build Tool
-This project uses [SBT](https://www.scala-sbt.org/) (Scala Build Tool) for building and managing dependencies. SBT allows for incremental compilation and easy management of multi-module projects.
+Copy your data files (again replacing <bucket> with your bucket prefix)
 
-## Getting Started
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/esumitra/2025-fall-csci-e88c.git
+```
+aws s3 cp -sse AES256 data/taxi_zone_lookup.csv <bucket>/data/taxi_zone_lookup.csv
+aws s3 cp -sse AES256 data/yellow_tripdata_2025-01.parquet <bucket>/data/taxi_zone_lookup.csv
+```
 
-   cd 2025-fall-csci-e88c
-   ```
-2. **Build the project**:
-   ```bash
-   sbt compile
-   ```
-3. **Run the CLI**:
-   ```bash
-   sbt "cli/run John"
-   ```
-
-   To packge an executable file use the native packager plugin:
-   ```bash
-   sbt "cli/stage"
-    ```
-    This will create a script in the `cli/target/universal/stage/bin` directory that you can run directly.
-
-   e.g., ` ./cli/target/universal/stage/bin/cli John`
-4. **Run the Spark application**:
-   ```bash
-   sbt spark/run
-   ```
-
-## Running in Codespaces
-This project is configured to run in GitHub Codespaces, providing a ready-to-use development environment. Click the "Open in Github Codespaces" button below to start the developer IDE in the cloud.
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/esumitra/2025-fall-csci-e88c?quickstart=1)
+To run each stage, use the shell scripts provided: 
+```
+./runEmrBronze.sh
+./runEmrSilver.sh
+./runEmrGold.sh
+```
 
 
-## Running in DevContainer
-This project can be run in a DevContainer for a consistent development environment. Ensure you have [Visual Studio Code](https://code.visualstudio.com/) and the [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) installed. Follow these steps:
-1. Open the project in Visual Studio Code.
-2. Press `(Cmd+Shift+P)` and select `Dev Containers: Reopen in Container`.
-3. Wait for the container to build and start.
-4. Open a terminal in the DevContainer and run the project using SBT commands as described above.
+SILVERJOB
+---------
 
-## Running Spark
-
-1. Start the docker container:
-   ```bash
-   docker compose -f docker-compose-spark.yml up
-   ```
-2. Connect to the spark-master:
-   ```bash
-   docker exec -it spark-master /bin/bash
-   ```
-3. Run the spark shell interactively:
-   ```bash
-   /opt/spark/bin/spark-shell
-   ```
-
-4. Run the Spark application:
-
-   Submit the Spark job using the `/opt/spark/bin/spark-submit` command.
-
-## Running the Spark Job in Docker
-1. First, ensure that your Spark application uberjar file is built. You can build the Spark uberjar file by using the following sbt commands:
-   (Zach note: second command takes FOREVER - 336s-412s on my dev machine)
-2. Further Zach note, I've managed to knock this down a bit if you enter the SBT shell and increase the RAM available to SBT in spark/build.sbt. I used:
-3. javaOptions ++= Seq("-Xms512M", "-Xmx16G", "-XX:+CMSClassUnloadingEnabled"), which is in the repo now and allows the jvm to use up to 16GB of RAM to compile things
-4. Also enter the sbt shell first, which keeps some of it a little bit warm and knocks it down to a still unreasonable but slightly less mind numbing 2:30
-   ```bash
-   sbt 
-   compile
-   spark/assembly
-   exit
-   ```
-
-2. Then, copy the JAR file to the `docker/apps/spark` directory:
-   ```bash
-   cp spark/target/scala-2.13/SparkJob.jar docker/apps/spark
-   ```
-
-3. Copy any data files to the `data` directory. (Zach note, I stuck the taxi_zone_lookup.csv in there in the repo, make sure you download the yellow_tripdata_2025-01.parquet file, which isn't included because it's biggish)
-
-   The `data` directory is mounted to the Docker container at `/opt/spark-data`. Ensure that any input data files required by your Spark job are placed in this directory.
-
-4. Next, start the Docker container:
-   ```bash
-   docker compose -f docker-compose-spark.yml up -d
-   ```
-5. Finally, submit the Spark job:
-   ```bash
-   docker exec -it spark-master /bin/bash
-   
-   /opt/spark/bin/spark-submit --class org.cscie88c.spark.SparkJob --master spark://spark-master:7077 /opt/spark-apps/SparkJob.jar
-   ```
-6. To stop the Docker containers,
-
-   Exit the container shell and run:
-   ```bash
-   docker compose -f docker-compose-spark.yml down
-   ```
-
-## Docker commands
-
-1. Start the docker container:
-   ```bash
-   docker compose -f docker-compose-spark.yml up
-   ```
-2. Check status of running containers:
-   ```bash
-   docker ps
-   ```
-3. Review the logs:
-   ```bash
-   docker logs -f spark-master
-   ```
-4. Stop running containers:
-   ```bash
-   docker compose -f docker-compose-spark.yml down
-   ```
-
-### Static Analysis Tools
-
-#### Scalafmt
-To ensure clean code, run scalafmt periodically. The scalafmt configuration is defined at https://scalameta.org/scalafmt/docs/configuration.html
-
-For source files,
-
-`sbt scalafmt`
-
-For test files.
-
-`sbt test:scalafmt`
-
-#### Scalafix
-To ensure clean code, run scalafix periodically. The scalafix rules are listed at https://scalacenter.github.io/scalafix/docs/rules/overview.html
-
-For source files,
-
-`sbt "scalafix RemoveUnused"`
-
-For test files.
-
-`sbt "test:scalafix RemoveUnused"`
-
-## License
-Copyright 2025, Edward Sumitra
-
-Licensed under the MIT License.
-
-SilverJob - Trip Data Cleaning & Transformation
 
 Overview:
 ---------
@@ -203,17 +121,7 @@ Outputs:
 /opt/spark-data/silver/rejects_<rule_name>/       → Rejected rows (CSV)
 /opt/spark-data/silver/clean_sample_500k/         → 500K-row sample (CSV)
 
-Run Instructions:
------------------
-From project root:
-  sbt "spark/runMain org.cscie88c.spark.SilverJob"
 
-Or build and run manually:
-  sbt "spark/assembly"
-  spark-submit --class org.cscie88c.spark.SilverJob \
-    --master local[*] spark/target/scala-2.13/spark-assembly-*.jar
-
-Expected runtime: ~1–3 min (on ~3.5M rows)
 
 Applied DQ Rules (in order):
 ----------------------------
@@ -229,11 +137,11 @@ Applied DQ Rules (in order):
 10. no_negative_values         → remove any negative numeric fields
 
 Each rule prints metrics and writes rejects:
-  === METRICS: rule_name ===
-  Total before:  3,475,226
-  Kept rows:     3,100,000
-  Rejected rows:   375,226
-  Rejects written to: /opt/spark-data/silver/rejects_rule_name/
+=== METRICS: rule_name ===
+Total before:  3,475,226
+Kept rows:     3,100,000
+Rejected rows:   375,226
+Rejects written to: /opt/spark-data/silver/rejects_rule_name/
 
 Final Outputs:
 --------------
@@ -246,14 +154,14 @@ Verification Tips:
 - Check Spark logs for metrics at each stage.
 - Validate record counts: kept + rejected = total before.
 - To preview data:
-    spark.read.parquet("/opt/spark-data/silver/trips").show(20, false)
+  spark.read.parquet("/opt/spark-data/silver/trips").show(20, false)
 - To inspect rejects:
-    head /opt/spark-data/silver/rejects_duration_reasonable/part-*.csv
+  head /opt/spark-data/silver/rejects_duration_reasonable/part-*.csv
 
 Notes:
 ------
 - Each run overwrites previous results (repeatable).
 - All output paths configurable via SilverRoot variable.
 - Modify or add rules using the helper:
-    applyDQRule(currentDF, "rule_name", <condition>)
+  applyDQRule(currentDF, "rule_name", <condition>)
 

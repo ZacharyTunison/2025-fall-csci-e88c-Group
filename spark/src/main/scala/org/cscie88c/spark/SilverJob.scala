@@ -11,10 +11,12 @@ object SilverJob {
 
 
   def main(args: Array[String]): Unit = {
-    Utilities.validateArgs("Usage: SilverJob outputDirectory taxiZoneCSVpath TripDataparquetpath OutputPath", Array(args(1),args(2)))
+    //Utilities.validateArgs("Usage: SilverJob outputDirectory taxiZoneCSVpath TripDataparquetpath OutputPath", Array(args(1),args(2)))
     val spark = SparkSession.builder()
       .appName("SilverTripCleaning-MultiRule-SingleParquet")
       .master("local[*]")
+      .config("spark.hadoop.fs.file.impl.disable.cache", "true")
+      .config("spark.driver.extraJavaOptions", "-Dhadoop.security.authorization=false")
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")

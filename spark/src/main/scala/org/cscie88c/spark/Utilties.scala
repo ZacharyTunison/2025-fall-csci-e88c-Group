@@ -10,6 +10,7 @@ object Utilities {
       .coalesce(1)
       .write
       .mode("overwrite")
+      .option("parquet.enable.dictionary", "true")
       .option("compression", "snappy")
       .parquet(fileName)
   }

@@ -5,10 +5,10 @@ import org.apache.spark.sql.functions.{col, count, desc, when}
 
 object BronzeJob {
   def main(args: Array[String]): Unit = {
-   Utilities.validateArgs("Usage: SparkJob taxiZoneCSVpath TripDataparquetpath",args)
+  // Utilities.validateArgs("Usage: SparkJob taxiZoneCSVpath TripDataparquetpath",args)
 
     // All files are valid, proceed with your application...
-    println("All files valid. Continuing...")
+   // println("All files valid. Continuing...")
     val spark = SparkSession.builder()
       .appName("SampleSparkJob")
       .master("local[*]")
