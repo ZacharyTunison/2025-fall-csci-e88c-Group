@@ -3,7 +3,7 @@ source user_conf.sh
 timestamp=$(date +%Y%m%d%H%M%S)
 job_name="TestJob-$timestamp"
 jar_path="s3://$BUCKET/apps/SparkJob.jar"
-class_name="org.cscie88c.spark.BronzeJob"
+class_name="org.cscie88c.spark.GoldJob"
 arg_list="[\"s3://$BUCKET/data/silver/trips_conformed\",\"s3://$BUCKET/data/gold\"]"
 set -x
 aws emr-serverless start-job-run \
