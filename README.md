@@ -62,7 +62,7 @@ AWS cli required (or it can be done in EMR studio as well)
 
 Upload the mega jar to $BUCKET/apps/SparkJob.jar (replacing <bucket> with your bucket prefix, in my case "s3://taxidatabucket-ztharvard")
 
- ```aws s3 cp -sse AES256 spark/target/scala-2.12/SparkJob.jar <bucket>/apps/SparkJob.jar```
+ ```aws s3 cp --sse AES256 spark/target/scala-2.12/SparkJob.jar <bucket>/apps/SparkJob.jar```
 
 Copy your data files (again replacing <bucket> with your bucket prefix)
 
