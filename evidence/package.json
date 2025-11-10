@@ -8,7 +8,9 @@
     "test": "evidence build",
     "sources": "evidence sources",
     "sources:strict": "evidence sources --strict",
-    "preview": "evidence preview"
+    "preview": "evidence preview",
+    "update:sources": "npx evidence sources add sources/taxi_analytics/taxi_analytics.duckdb",
+    "refresh:data": "npm run update:sources && npm run dev"
   },
   "engines": {
     "npm": ">=7.0.0",
