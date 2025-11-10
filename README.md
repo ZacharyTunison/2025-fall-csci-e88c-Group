@@ -181,6 +181,89 @@ For test files.
 
 `sbt "test:scalafix RemoveUnused"`
 
+## Advanced Troubleshooting (Python, DuckDB, and Evidence Setup)
+
+If the pipeline runs but the dashboard shows  
+`Unable to load source manifest` or `ModuleNotFoundError: No module named 'duckdb'`,  
+follow these steps:
+
+### 1. Install Python and pip inside WSL
+If `pip` is missing:
+```bash
+sudo apt update
+sudo apt install python3-pip -y
+```
+
+If virtual environment creation fails:
+```bash
+sudo apt install python3.12-venv -y
+```
+(Replace `3.12` with your Python version, e.g., `3.10` or `3.11`.)
+
+### 2. Create and activate a virtual environment
+From the project root:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+You’ll know it’s active when your prompt looks like:
+```
+(.venv) mikha@LAPTOP-NQ6Q29UV:~/Projects/2025-fall-csci-e88c-Group$
+```
+
+### 3. Install DuckDB Python package
+```bash
+pip install duckdb
+```
+
+If you see the “externally managed environment” error:
+```bash
+pip install duckdb --break-system-packages
+```
+(Use only if not working inside a venv.)
+
+### 4. Rebuild the dashboard database
+After fixing Python/DuckDB, recreate your database:
+```bash
+npm run update:dashboard
+```
+
+Expected output:
+```
+Creating table weekly_trip_volume...
+Created table weekly_trip_volume
+DuckDB database created at: evidence/sources/taxi_analytics/taxi_analytics.duckdb
+```
+
+### 5. Regenerate the Evidence source manifest
+From the `evidence` subfolder:
+```bash
+cd evidence
+npx evidence sources add sources/taxi_analytics/taxi_analytics.duckdb
+```
+
+Expected:
+```
+✔ Linked DuckDB source taxi_analytics
+```
+
+### 6. Launch the dashboard
+```bash
+npm run dev
+```
+Then visit:  
+[http://localhost:3000]
+
+---
+
+### Common verification commands
+
+| Check | Command | Expected |
+|-------|----------|-----------|
+| Confirm DuckDB file | `ls evidence/sources/taxi_analytics/` | Shows `taxi_analytics.duckdb` |
+| Check manifest | `cat evidence/sources/sources.json` | Contains one `taxi_analytics` entry |
+| Verify Docker running | `docker ps` | Shows `spark-master` and `spark-worker` containers |
+
 
 
 ## License

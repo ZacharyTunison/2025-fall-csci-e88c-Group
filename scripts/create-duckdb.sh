@@ -24,7 +24,14 @@ mkdir -p "evidence/sources/taxi_analytics"
 rm -f "$DB_PATH"
 
 # Create DuckDB database with tables from Parquet files
-/Users/chaddalrymple/code/2025-fall-csci-e88c-Group/.venv/bin/python - << EOF
+# --- CHANGED: use the system Python instead of a hardcoded local path ---
+PYTHON_BIN=$(which python3 || which python)
+if [ -z "$PYTHON_BIN" ]; then
+    echo "ERROR: Python not found in PATH."
+    exit 1
+fi
+
+"$PYTHON_BIN" - << EOF
 import duckdb
 import os
 

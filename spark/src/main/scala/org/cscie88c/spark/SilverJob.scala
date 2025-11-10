@@ -77,7 +77,7 @@ object SilverJob {
       )
       finalCleanCount = numericallyCleanDF.count()
     } else {
-      println("No numeric columns found — skipping no_negative_values check.")
+      println("No numeric columns found — skipping no_negative_values")
     }
 
     println("\n=== FINAL CLEANED DATASET METRICS ===")
