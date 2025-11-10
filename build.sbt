@@ -112,7 +112,7 @@ zipHomework := {
   val bd = baseDirectory.value
   val targetFile = s"${bd.getAbsolutePath}/scalaHomework.zip"
   val ignoredPaths =
-    ".*(\\.idea|target|\\.DS_Store|\\.bloop|\\.metals|\\.vsc|\\.git|\\.devcontainer|\\.vscode|apps|setup|data)/*".r.pattern
+    ".*(\\.idea|target|\\.DS_Store|\\.bloop|\\.metals|\\.vsc|\\.git|\\.aws|\\.venv|\\.devcontainer|\\.vscode|apps|setup|data|node_modules)/*".r.pattern
   val fileFilter = new FileFilter {
     override def accept(f: File) =
       !ignoredPaths.matcher(f.getAbsolutePath).lookingAt
