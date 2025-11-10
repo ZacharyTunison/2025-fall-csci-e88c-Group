@@ -37,11 +37,11 @@ Saved: /opt/spark-data/gold/kpis/run_20251106_003747/kpi_summary
 
 Run Instructions:
 From project root:
-sbt "spark/runMain org.cscie88c.spark.GoldKPIJob"
+sbt "spark/runMain org.cscie88c.spark.GoldJob"
 
 Or build & run manually:
 sbt "spark/assembly"
-spark-submit --class org.cscie88c.spark.GoldKPIJob --master local[*] spark/target/scala-2.13/spark-assembly-*.jar
+spark-submit --class org.cscie88c.spark.GoldJob --master local[*] spark/target/scala-2.13/spark-assembly-*.jar
 
 Expected runtime: ~1–2 minutes.
 

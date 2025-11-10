@@ -159,29 +159,6 @@ data/taxi_zone_lookup.csv
    docker compose -f docker-compose-spark.yml down
    ```
 
-### Static Analysis Tools
-
-#### Scalafmt
-To ensure clean code, run scalafmt periodically. The scalafmt configuration is defined at https://scalameta.org/scalafmt/docs/configuration.html
-
-For source files,
-
-`sbt scalafmt`
-
-For test files.
-
-`sbt test:scalafmt`
-
-#### Scalafix
-To ensure clean code, run scalafix periodically. The scalafix rules are listed at https://scalacenter.github.io/scalafix/docs/rules/overview.html
-
-For source files,
-
-`sbt "scalafix RemoveUnused"`
-
-For test files.
-
-`sbt "test:scalafix RemoveUnused"`
 
 ## Advanced Troubleshooting (Python, DuckDB, and Evidence Setup)
 
