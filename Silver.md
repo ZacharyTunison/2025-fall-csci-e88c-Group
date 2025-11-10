@@ -19,7 +19,7 @@ Outputs:
 /opt/spark-data/silver/rejects_<rule_name>/       → Rejected rows (CSV)  
 /opt/spark-data/silver/clean_sample_10k/          → 10K-row cleaned sample (CSV)  
 /opt/spark-data/silver/conformed_sample_10k/      → 10K-row conformed sample (CSV)
-SilverJob - Trip Data Cleaning
+
 
 Run Instructions:
 -----------------

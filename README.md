@@ -25,6 +25,7 @@ This project uses [SBT](https://www.scala-sbt.org/) (Scala Build Tool) for build
 - Docker and Docker Compose
 - Java 17
 - sbt 1.9.2+
+- python
 
 ### Installation
 
@@ -68,6 +69,7 @@ If you prefer to run each step individually:
 
 2. Run data processing:
    ```bash
+   npm buildAndCopyJar
    npm run spark:silver
    npm run spark:gold
    ```
